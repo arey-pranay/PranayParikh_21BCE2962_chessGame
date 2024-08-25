@@ -11,7 +11,7 @@ function createNewGame() {
     board: Array(5)
       .fill(null)
       .map(() => Array(5).fill(null)),
-    currentTurn: 0,
+    // chanceB: 0,
     gameOver: false,
     winner: null,
   };
@@ -20,18 +20,29 @@ let board = Array(5)
   .fill(null)
   .map(() => Array(5).fill(null));
 let playersJoined = 0;
+let chanceB = 0;
 const initializeA = () => {
-  for (let i = 0; i < 5; i++) {
-    board[0][i] = "A";
-  }
+  // for (let i = 0; i < 5; i++) {
+  board[0][0] = "A-P1";
+  board[0][1] = "A-P2";
+  board[0][2] = "A-P3";
+  board[0][3] = "A-H1";
+  board[0][4] = "A-H2";
+
+  // }
   console.log(board);
   playersJoined++;
   return;
 };
 const initializeB = () => {
-  for (let i = 0; i < 5; i++) {
-    board[4][i] = "B";
-  }
+  // for (let i = 0; i < 5; i++) {
+  //   board[4][i] = "B";
+  // }
+  board[4][0] = "B-P1";
+  board[4][1] = "B-P2";
+  board[4][2] = "B-P3";
+  board[4][3] = "B-H1";
+  board[4][4] = "B-H2";
   console.log(board);
   playersJoined++;
   return;
@@ -43,6 +54,109 @@ function broadcast(message) {
     }
   });
 }
+const registerMove = (player, piece, direction) => {
+  console.log("line58: " + player);
+  if (player == "B") {
+    if (direction == "L") direction = "R";
+    else if (direction == "R") direction = "L";
+    else if (direction == "F") direction = "B";
+    else if (direction == "B") direction = "F";
+    // for BL BR Fl Fr also then
+  }
+  let toFind = player + "-" + piece;
+  console.log(toFind);
+  let I = -1;
+  let J = -1;
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j < 5; j++) {
+      if (board[i][j] == toFind) {
+        I = i;
+        J = j;
+        break;
+      }
+    }
+  }
+  if (I == -1 || J == -1) console.log("position not found, maybe died");
+
+  let OldI = I;
+  let OldJ = J;
+  //not yet considering killing other pieces
+  //considering only One direction of moving. Later u=I need to update for A and B separately, coz one's up is another's down
+  if (piece == "P1" || piece == "P2" || piece == "P3") {
+    switch (direction) {
+      case "R":
+        J--;
+        break;
+      case "L":
+        J++;
+        break;
+      case "F":
+        I++;
+        break;
+      case "B":
+        I--;
+        break;
+    }
+  } else if (piece == "H1") {
+    switch (direction) {
+      case "R":
+        J--;
+        J--;
+        break;
+      case "L":
+        J++;
+        J++;
+        break;
+      case "F":
+        I++;
+        I++;
+        break;
+      case "B":
+        I--;
+        I--;
+        break;
+    }
+  } else {
+    switch (direction) {
+      case "FL":
+        I++;
+        J--;
+        break;
+      case "FR":
+        I++;
+        J++;
+        break;
+      case "BL":
+        I--;
+        J--;
+        break;
+      case "BR":
+        I--;
+        J++;
+        break;
+    }
+  }
+
+  if (!checkValidity(player, piece, I, J)) {
+    console.log("invalid move"); //of this move
+    return;
+  }
+  board[OldI][OldJ] = "";
+  board[I][J] = toFind;
+  console.log("Updated Board");
+  console.log(board);
+  chanceB = !chanceB;
+  return;
+};
+const checkValidity = (player, piece, direction, I, J) => {
+  console.log(I);
+  console.log(J);
+  if (I < 0 || J < 0 || I > 4 || J > 4) return false;
+  // if (player == board[I][J][0]) return false;
+  return true;
+  //maybe out of bound
+  //maybe unable to kill due to hierarchy etc
+};
 function isValidMove(game, playerId, charId, i, j) {
   if (i < 0 || i >= 5 || j < 0 || j >= 5) return false;
   const character = game.board[i][j];
@@ -214,6 +328,23 @@ server.on("connection", (ws) => {
           );
           // ws.send(JSON.stringify({ type: "update_board", data: board }));
           break;
+
+        case "piece_moved":
+          // chanceB = !chanceB;
+          console.log(data);
+          let player = data.chanceB != 0 ? "B" : "A";
+          let piece = data.char;
+          let direction = data.dir;
+          registerMove(player, piece, direction);
+          broadcast(
+            JSON.stringify({
+              type: "move_registered",
+              data: {
+                board,
+                chanceB,
+              },
+            })
+          );
         // case "start_game":
         case "join_game":
           playerId = data.playerId;
@@ -298,7 +429,13 @@ server.on("connection", (ws) => {
     if (index !== -1) {
       clients.splice(index, 1);
     }
-
+    playersJoined = 0;
+    broadcast(
+      JSON.stringify({
+        type: "playerLeft",
+        data: {},
+      })
+    );
     console.log("WebSocket connection closed");
   });
 });

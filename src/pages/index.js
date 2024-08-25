@@ -7,14 +7,16 @@ const Home = () => {
   const [playerId, setPlayerId] = useState("");
   const [gameId, setGameId] = useState("");
   const [isJoined, setIsJoined] = useState(false);
+
   const [board, setBoard] = useState(
     Array(5)
       .fill(null)
       .map(() => Array(5).fill(null))
   );
   const [playerCount, setPlayerCount] = useState(0);
+  const [chanceB, setChanceB] = useState(0);
   useEffect(() => {
-    alert("board updated");
+    // alert("board updated");
     console.log(board);
   }, [board]);
 
@@ -44,6 +46,15 @@ const Home = () => {
         setBoard(message.data.board);
         console.log(message.data);
         setPlayerCount(message.data.playersJoined);
+      } else if (message.type == "move_registered") {
+        // alert("move registered");
+        setBoard(message.data.board);
+        setChanceB(message.data.chanceB); //invalid, killing, winning etc ignore for now coz  just wanna get all set up and running first
+      } else if (message.type == "playerLeft") {
+        alert("You won, the other player left");
+        // setTimeout(() => {
+        //   location.reload();
+        // }, 1000);
       }
       if (message.type === "game_state") {
         setGameState(message.data);
@@ -82,7 +93,12 @@ const Home = () => {
   //   : Array(5)
   //       .fill(null)
   //       .map(() => Array(5).fill(null));
-  const currentTurn = gameState ? gameState.players[gameState.currentTurn] : "";
+  // const currentTurn = gameState ? gameState.players[gameState.currentTurn] : "";
+  const [currentTurn, setCurrentTurn] = useState("A");
+  useEffect(() => {
+    setCurrentTurn(chanceB == 1 ? "B" : "A");
+  }, [chanceB]);
+
   const gameOver = gameState ? gameState.gameOver : false;
   const winner = gameState ? gameState.winner : "";
   const waitingForGameStart = !gameState || gameState.players.length < 2;
@@ -119,11 +135,11 @@ const Home = () => {
 
   const renderBoard = () => {
     return board.map((row, i) => (
-      <div key={i} className="flex">
+      <div key={i} className="flex w-full justify-center m-1">
         {row.map((col, j) => (
           <div
             key={j}
-            className="w-16 h-16 border border-gray-400 flex items-center justify-center"
+            className="w-16 m-1 h-16 border border-gray-400 flex items-center justify-center"
           >
             {col}
           </div>
@@ -133,22 +149,32 @@ const Home = () => {
   };
   if (playerCount < 2) {
     return (
-      <div className="w-full flex justify-between bg-black text-white">
-        <button
-          onClick={() => {
-            sendMessage({ type: "a_joined", data: {} });
-          }}
-        >
-          join a
-        </button>
-        <button
-          onClick={() => {
-            sendMessage({ type: "b_joined", data: {} });
-          }}
-        >
-          join b
-        </button>
-      </div>
+      <>
+        <div className="w-full flex justify-between bg-black text-white text-4xl font-normal p-10">
+          <button
+            onClick={() => {
+              sendMessage({ type: "a_joined", data: {} });
+              setPlayerId("A");
+            }}
+            className="cursor-pointer hover:opacity-50"
+          >
+            join as player a
+          </button>
+          <h1>{playerCount} joined</h1>
+          <button
+            onClick={() => {
+              sendMessage({ type: "b_joined", data: {} });
+              setPlayerId("B");
+            }}
+            className="cursor-pointer hover:opacity-50"
+          >
+            join as player b
+          </button>
+        </div>
+        <h1 className="text-center underline italic text-2xl m-10">
+          Hey, you are: <strong>{playerId}</strong>
+        </h1>
+      </>
     );
   }
 
@@ -189,9 +215,9 @@ const Home = () => {
   return (
     <div className="p-4">
       <h1 className="text-center text-2xl font-bold mb-4">Chess-like Game</h1>
-      <div className="mb-4">{renderBoard()}</div>
+      <div className="mb-4 p-4  w-full bg-cyan-50">{renderBoard()}</div>
       <div className="text-center text-xl font-bold mb-4">
-        Current Turn: Player {currentTurn}
+        Current Turn: Player {chanceB ? "b" : "a"}
       </div>
       {gameOver ? (
         <div className="text-center text-xl font-bold mt-4">
@@ -204,7 +230,7 @@ const Home = () => {
           </button>
         </div>
       ) : (
-        <div className="flex flex-wrap justify-center mt-4">
+        <div className="flex flex-wrap  mt-4 w-full  justify-between bg-cyan-50">
           {["P1", "P2", "P3", "H1", "H2"].map((char) => (
             <div key={char} className="m-2">
               <p className="text-center font-bold">{char}</p>
@@ -213,8 +239,14 @@ const Home = () => {
                   ? ["L", "R", "F", "B"].map((dir) => (
                       <button
                         key={`${char}:${dir}`}
-                        onClick={() => handleMove(`${char}:${dir}`)}
-                        className="px-2 py-1 bg-blue-500 text-white rounded m-1"
+                        onClick={() =>
+                          // handleMove(`${char}:${dir}`)
+                          sendMessage({
+                            type: "piece_moved",
+                            data: { chanceB, char, dir },
+                          })
+                        }
+                        className="px-4 py-4 bg-blue-500 text-white rounded m-1 text-xl"
                         disabled={currentTurn !== playerId}
                       >
                         {dir}
@@ -225,7 +257,7 @@ const Home = () => {
                       <button
                         key={`${char}:${dir}`}
                         onClick={() => handleMove(`${char}:${dir}`)}
-                        className="px-2 py-1 bg-green-500 text-white rounded m-1"
+                        className="px-4 py-4 bg-green-500 text-white rounded m-1 text-xl"
                         disabled={currentTurn !== playerId}
                       >
                         {dir}
@@ -235,7 +267,7 @@ const Home = () => {
                       <button
                         key={`${char}:${dir}`}
                         onClick={() => handleMove(`${char}:${dir}`)}
-                        className="px-2 py-1 bg-red-500 text-white rounded m-1"
+                        className="px-4 py-4 bg-red-500 text-white rounded m-1 text-xl"
                         disabled={currentTurn !== playerId}
                       >
                         {dir}
@@ -246,6 +278,9 @@ const Home = () => {
           ))}
         </div>
       )}
+      <h1 className="text-center underline italic text-2xl m-10">
+        Hey, you are: <strong>{playerId}</strong>
+      </h1>
     </div>
   );
 };
