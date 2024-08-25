@@ -3,6 +3,7 @@ const WebSocket = require("ws");
 const server = new WebSocket.Server({ port: 8080 });
 
 let games = {};
+const clients = [];
 
 function createNewGame() {
   return {
@@ -15,7 +16,33 @@ function createNewGame() {
     winner: null,
   };
 }
-
+let board = Array(5)
+  .fill(null)
+  .map(() => Array(5).fill(null));
+let playersJoined = 0;
+const initializeA = () => {
+  for (let i = 0; i < 5; i++) {
+    board[0][i] = "A";
+  }
+  console.log(board);
+  playersJoined++;
+  return;
+};
+const initializeB = () => {
+  for (let i = 0; i < 5; i++) {
+    board[4][i] = "B";
+  }
+  console.log(board);
+  playersJoined++;
+  return;
+};
+function broadcast(message) {
+  clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+}
 function isValidMove(game, playerId, charId, i, j) {
   if (i < 0 || i >= 5 || j < 0 || j >= 5) return false;
   const character = game.board[i][j];
@@ -153,13 +180,41 @@ function handleMove(game, playerId, move) {
 server.on("connection", (ws) => {
   let playerId;
   let gameId;
-
+  clients.push(ws);
   ws.on("message", (message) => {
     try {
       const { type, data } = JSON.parse(message);
       console.log("Received message:", type, data);
 
       switch (type) {
+        case "a_joined":
+          console.log("a joined");
+          initializeA();
+          // const updateMessage = ;
+          broadcast(
+            JSON.stringify({
+              type: "update_board",
+              data: { board, playersJoined },
+            })
+          );
+          // ws.send(JSON.stringify({ type: "update_board", data: board }));
+          break;
+        case "b_joined":
+          console.log("b joined");
+          initializeB();
+          // const updateMessage = JSON.stringify({ type: "update_board", data: board });
+          broadcast(
+            JSON.stringify({
+              type: "update_board",
+              data: {
+                board,
+                playersJoined,
+              },
+            })
+          );
+          // ws.send(JSON.stringify({ type: "update_board", data: board }));
+          break;
+        // case "start_game":
         case "join_game":
           playerId = data.playerId;
           gameId = data.gameId;
@@ -239,6 +294,11 @@ server.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
+    const index = clients.indexOf(ws);
+    if (index !== -1) {
+      clients.splice(index, 1);
+    }
+
     console.log("WebSocket connection closed");
   });
 });

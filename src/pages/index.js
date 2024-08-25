@@ -7,6 +7,16 @@ const Home = () => {
   const [playerId, setPlayerId] = useState("");
   const [gameId, setGameId] = useState("");
   const [isJoined, setIsJoined] = useState(false);
+  const [board, setBoard] = useState(
+    Array(5)
+      .fill(null)
+      .map(() => Array(5).fill(null))
+  );
+  const [playerCount, setPlayerCount] = useState(0);
+  useEffect(() => {
+    alert("board updated");
+    console.log(board);
+  }, [board]);
 
   const connect = useCallback(() => {
     const ws = new WebSocket("ws://localhost:8080");
@@ -30,7 +40,11 @@ const Home = () => {
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
       console.log("Received message:", message);
-
+      if (message.type === "update_board") {
+        setBoard(message.data.board);
+        console.log(message.data);
+        setPlayerCount(message.data.playersJoined);
+      }
       if (message.type === "game_state") {
         setGameState(message.data);
       } else if (message.type === "invalid_move") {
@@ -63,11 +77,11 @@ const Home = () => {
     [socket, isConnected]
   );
 
-  const board = gameState
-    ? gameState.board
-    : Array(5)
-        .fill(null)
-        .map(() => Array(5).fill(null));
+  // const board = gameState
+  //   ? gameState.board
+  //   : Array(5)
+  //       .fill(null)
+  //       .map(() => Array(5).fill(null));
   const currentTurn = gameState ? gameState.players[gameState.currentTurn] : "";
   const gameOver = gameState ? gameState.gameOver : false;
   const winner = gameState ? gameState.winner : "";
@@ -106,49 +120,71 @@ const Home = () => {
   const renderBoard = () => {
     return board.map((row, i) => (
       <div key={i} className="flex">
-        {row.map((cell, j) => (
+        {row.map((col, j) => (
           <div
             key={j}
             className="w-16 h-16 border border-gray-400 flex items-center justify-center"
           >
-            {cell ? `${cell.playerId}-${cell.id}` : ""}
+            {col}
           </div>
         ))}
       </div>
     ));
   };
-
-  if (waitingForGameStart) {
+  if (playerCount < 2) {
     return (
-      <div className="p-4">
-        <h1 className="text-center text-2xl font-bold mb-4">Join Game</h1>
-        <div className="flex justify-center space-x-4 mb-4">
-          <button
-            onClick={() => joinGame("1", "A")}
-            className="px-4 py-2 bg-blue-500 text-white rounded"
-          >
-            Join as Player A
-          </button>
-          <button
-            onClick={() => joinGame("1", "B")}
-            className="px-4 py-2 bg-blue-500 text-white rounded"
-          >
-            Join as Player B
-          </button>
-        </div>
-        {isJoined && (
-          <div className="text-center">
-            <button
-              onClick={setupCharacters}
-              className="px-4 py-2 bg-green-500 text-white rounded"
-            >
-              Start Game
-            </button>
-          </div>
-        )}
+      <div className="w-full flex justify-between bg-black text-white">
+        <button
+          onClick={() => {
+            sendMessage({ type: "a_joined", data: {} });
+          }}
+        >
+          join a
+        </button>
+        <button
+          onClick={() => {
+            sendMessage({ type: "b_joined", data: {} });
+          }}
+        >
+          join b
+        </button>
       </div>
     );
   }
+
+  // return <div>both joined</div>;
+
+  // if (waitingForGameStart) {
+  //   return (
+  //     <div className="p-4">
+  //       <h1 className="text-center text-2xl font-bold mb-4">Join Game</h1>
+  //       <div className="flex justify-center space-x-4 mb-4">
+  //         <button
+  //           onClick={() => joinGame("1", "A")}
+  //           className="px-4 py-2 bg-blue-500 text-white rounded"
+  //         >
+  //           Join as Player A
+  //         </button>
+  //         <button
+  //           onClick={() => joinGame("1", "B")}
+  //           className="px-4 py-2 bg-blue-500 text-white rounded"
+  //         >
+  //           Join as Player B
+  //         </button>
+  //       </div>
+  //       {isJoined && (
+  //         <div className="text-center">
+  //           <button
+  //             onClick={setupCharacters}
+  //             className="px-4 py-2 bg-green-500 text-white rounded"
+  //           >
+  //             Start Game
+  //           </button>
+  //         </div>
+  //       )}
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="p-4">
