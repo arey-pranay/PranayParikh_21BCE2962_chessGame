@@ -21,6 +21,11 @@ let board = Array(5)
   .map(() => Array(5).fill(null));
 let playersJoined = 0;
 let chanceB = 0;
+const resetBoard = () => {
+  board = Array(5)
+    .fill(null)
+    .map(() => Array(5).fill(null));
+};
 const initializeA = () => {
   // for (let i = 0; i < 5; i++) {
   board[0][0] = "A-P1";
@@ -54,17 +59,24 @@ function broadcast(message) {
     }
   });
 }
-const registerMove = (player, piece, direction) => {
+const registerMove = (ws, player, piece, direction) => {
   console.log("line58: " + player);
+  console.log("line58: " + piece);
+  console.log("line58: " + direction);
+
   if (player == "B") {
     if (direction == "L") direction = "R";
     else if (direction == "R") direction = "L";
     else if (direction == "F") direction = "B";
     else if (direction == "B") direction = "F";
+    else if (direction == "FL") direction = "BR";
+    else if (direction == "FR") direction = "BL";
+    else if (direction == "BL") direction = "FR";
+    else if (direction == "BR") direction = "FL";
     // for BL BR Fl Fr also then
   }
   let toFind = player + "-" + piece;
-  console.log(toFind);
+  console.log("toFind: " + toFind);
   let I = -1;
   let J = -1;
   for (let i = 0; i < 5; i++) {
@@ -120,25 +132,29 @@ const registerMove = (player, piece, direction) => {
     switch (direction) {
       case "FL":
         I++;
-        J--;
+        J++;
         break;
       case "FR":
         I++;
-        J++;
+        J--;
         break;
       case "BL":
         I--;
-        J--;
+        J++;
         break;
       case "BR":
         I--;
-        J++;
+        J--;
         break;
     }
   }
 
+  console.log("passing to check validity");
+  console.log(I);
+  console.log(J);
   if (!checkValidity(player, piece, I, J)) {
     console.log("invalid move"); //of this move
+    ws.send(JSON.stringify({ type: "error_alert", data: "invalid move" }));
     return;
   }
   board[OldI][OldJ] = "";
@@ -148,9 +164,12 @@ const registerMove = (player, piece, direction) => {
   chanceB = !chanceB;
   return;
 };
-const checkValidity = (player, piece, direction, I, J) => {
+const checkValidity = (player, piece, I, J) => {
+  console.log("checking validity");
   console.log(I);
   console.log(J);
+  console.log(player);
+  // console.log(board[I][J].charAt(0));
   if (I < 0 || J < 0 || I > 4 || J > 4) return false;
   if (board[I][J] && player == board[I][J].charAt(0)) return false;
   return true;
@@ -163,133 +182,133 @@ function isValidMove(game, playerId, charId, i, j) {
   return !character || character.playerId !== playerId;
 }
 
-function handleMove(game, playerId, move) {
-  console.log("Current game state:", JSON.stringify(game));
-  console.log(`Handling move for player ${playerId}: ${move}`);
+// function handleMove(game, playerId, move) {
+//   console.log("Current game state:", JSON.stringify(game));
+//   console.log(`Handling move for player ${playerId}: ${move}`);
 
-  const [charId, direction] = move.split(":");
-  let charPosition;
+//   const [charId, direction] = move.split(":");
+//   let charPosition;
 
-  for (let i = 0; i < 5; i++) {
-    for (let j = 0; j < 5; j++) {
-      console.log(
-        `Checking cell (${i}, ${j}):`,
-        JSON.stringify(game.board[i][j])
-      );
-      if (
-        game.board[i][j] &&
-        game.board[i][j].id === charId &&
-        game.board[i][j].playerId === playerId
-      ) {
-        charPosition = { i, j };
-        console.log(`Character ${charId} found at position (${i}, ${j})`);
-        break;
-      }
-    }
-    if (charPosition) break;
-  }
+//   for (let i = 0; i < 5; i++) {
+//     for (let j = 0; j < 5; j++) {
+//       console.log(
+//         `Checking cell (${i}, ${j}):`,
+//         JSON.stringify(game.board[i][j])
+//       );
+//       if (
+//         game.board[i][j] &&
+//         game.board[i][j].id === charId &&
+//         game.board[i][j].playerId === playerId
+//       ) {
+//         charPosition = { i, j };
+//         console.log(`Character ${charId} found at position (${i}, ${j})`);
+//         break;
+//       }
+//     }
+//     if (charPosition) break;
+//   }
 
-  if (!charPosition) {
-    console.log(`Character ${charId} not found for player ${playerId}`);
-    return { error: "Character not found" };
-  }
+//   if (!charPosition) {
+//     console.log(`Character ${charId} not found for player ${playerId}`);
+//     return { error: "Character not found" };
+//   }
 
-  let { i, j } = charPosition;
-  const charType = charId[0];
+//   let { i, j } = charPosition;
+//   const charType = charId[0];
 
-  let newPositions = [];
-  switch (charType) {
-    case "P":
-      switch (direction) {
-        case "L":
-          newPositions.push({ i, j: j - 1 });
-          break;
-        case "R":
-          newPositions.push({ i, j: j + 1 });
-          break;
-        case "F":
-          newPositions.push({ i: i - 1, j });
-          break;
-        case "B":
-          newPositions.push({ i: i + 1, j });
-          break;
-        default:
-          return { error: "Invalid move direction for Pawn" };
-      }
-      break;
-    case "H":
-      if (charId === "H1") {
-        switch (direction) {
-          case "L":
-            newPositions.push({ i, j: j - 1 }, { i, j: j - 2 });
-            break;
-          case "R":
-            newPositions.push({ i, j: j + 1 }, { i, j: j + 2 });
-            break;
-          case "F":
-            newPositions.push({ i: i - 1, j }, { i: i - 2, j });
-            break;
-          case "B":
-            newPositions.push({ i: i + 1, j }, { i: i + 2, j });
-            break;
-          default:
-            return { error: "Invalid move direction for Hero1" };
-        }
-      } else if (charId === "H2") {
-        switch (direction) {
-          case "FL":
-            newPositions.push({ i: i - 1, j: j - 1 }, { i: i - 2, j: j - 2 });
-            break;
-          case "FR":
-            newPositions.push({ i: i - 1, j: j + 1 }, { i: i - 2, j: j + 2 });
-            break;
-          case "BL":
-            newPositions.push({ i: i + 1, j: j - 1 }, { i: i + 2, j: j - 2 });
-            break;
-          case "BR":
-            newPositions.push({ i: i + 1, j: j + 1 }, { i: i + 2, j: j + 2 });
-            break;
-          default:
-            return { error: "Invalid move direction for Hero2" };
-        }
-      }
-      break;
-    default:
-      return { error: "Invalid character type" };
-  }
+//   let newPositions = [];
+//   switch (charType) {
+//     case "P":
+//       switch (direction) {
+//         case "L":
+//           newPositions.push({ i, j: j - 1 });
+//           break;
+//         case "R":
+//           newPositions.push({ i, j: j + 1 });
+//           break;
+//         case "F":
+//           newPositions.push({ i: i - 1, j });
+//           break;
+//         case "B":
+//           newPositions.push({ i: i + 1, j });
+//           break;
+//         default:
+//           return { error: "Invalid move direction for Pawn" };
+//       }
+//       break;
+//     case "H":
+//       if (charId === "H1") {
+//         switch (direction) {
+//           case "L":
+//             newPositions.push({ i, j: j - 1 }, { i, j: j - 2 });
+//             break;
+//           case "R":
+//             newPositions.push({ i, j: j + 1 }, { i, j: j + 2 });
+//             break;
+//           case "F":
+//             newPositions.push({ i: i - 1, j }, { i: i - 2, j });
+//             break;
+//           case "B":
+//             newPositions.push({ i: i + 1, j }, { i: i + 2, j });
+//             break;
+//           default:
+//             return { error: "Invalid move direction for Hero1" };
+//         }
+//       } else if (charId === "H2") {
+//         switch (direction) {
+//           case "FL":
+//             newPositions.push({ i: i - 1, j: j - 1 }, { i: i - 2, j: j - 2 });
+//             break;
+//           case "FR":
+//             newPositions.push({ i: i - 1, j: j + 1 }, { i: i - 2, j: j + 2 });
+//             break;
+//           case "BL":
+//             newPositions.push({ i: i + 1, j: j - 1 }, { i: i + 2, j: j - 2 });
+//             break;
+//           case "BR":
+//             newPositions.push({ i: i + 1, j: j + 1 }, { i: i + 2, j: j + 2 });
+//             break;
+//           default:
+//             return { error: "Invalid move direction for Hero2" };
+//         }
+//       }
+//       break;
+//     default:
+//       return { error: "Invalid character type" };
+//   }
 
-  for (let pos of newPositions) {
-    if (!isValidMove(game, playerId, charId, pos.i, pos.j)) {
-      return { error: "Invalid move" };
-    }
-  }
+//   for (let pos of newPositions) {
+//     if (!isValidMove(game, playerId, charId, pos.i, pos.j)) {
+//       return { error: "Invalid move" };
+//     }
+//   }
 
-  game.board[i][j] = null;
-  for (let pos of newPositions) {
-    if (game.board[pos.i][pos.j]) {
-      game.board[pos.i][pos.j] = null;
-    }
-  }
-  game.board[newPositions[newPositions.length - 1].i][
-    newPositions[newPositions.length - 1].j
-  ] = { id: charId, playerId };
+//   game.board[i][j] = null;
+//   for (let pos of newPositions) {
+//     if (game.board[pos.i][pos.j]) {
+//       game.board[pos.i][pos.j] = null;
+//     }
+//   }
+//   game.board[newPositions[newPositions.length - 1].i][
+//     newPositions[newPositions.length - 1].j
+//   ] = { id: charId, playerId };
 
-  const remainingPlayers = new Set();
-  game.board.forEach((row) =>
-    row.forEach((cell) => {
-      if (cell) remainingPlayers.add(cell.playerId);
-    })
-  );
+//   const remainingPlayers = new Set();
+//   game.board.forEach((row) =>
+//     row.forEach((cell) => {
+//       if (cell) remainingPlayers.add(cell.playerId);
+//     })
+//   );
 
-  if (remainingPlayers.size === 1) {
-    game.gameOver = true;
-    game.winner = Array.from(remainingPlayers)[0];
-  }
+//   if (remainingPlayers.size === 1) {
+//     game.gameOver = true;
+//     game.winner = Array.from(remainingPlayers)[0];
+//   }
 
-  game.currentTurn = (game.currentTurn + 1) % game.players.length;
+//   game.currentTurn = (game.currentTurn + 1) % game.players.length;
 
-  return { success: true, game };
-}
+//   return { success: true, game };
+// }
 
 server.on("connection", (ws) => {
   let playerId;
@@ -331,11 +350,12 @@ server.on("connection", (ws) => {
 
         case "piece_moved":
           // chanceB = !chanceB;
+          console.log("piece_moved event received");
           console.log(data);
           let player = data.chanceB != 0 ? "B" : "A";
           let piece = data.char;
           let direction = data.dir;
-          registerMove(player, piece, direction);
+          registerMove(ws, player, piece, direction);
           broadcast(
             JSON.stringify({
               type: "move_registered",
@@ -430,10 +450,11 @@ server.on("connection", (ws) => {
       clients.splice(index, 1);
     }
     playersJoined = 0;
+    resetBoard();
     broadcast(
       JSON.stringify({
         type: "playerLeft",
-        data: {},
+        data: { board: board },
       })
     );
     console.log("WebSocket connection closed");

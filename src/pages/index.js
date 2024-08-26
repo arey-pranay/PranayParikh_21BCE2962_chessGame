@@ -17,10 +17,49 @@ const Home = () => {
   const [playerCount, setPlayerCount] = useState(0);
   const [chanceB, setChanceB] = useState(0);
   useEffect(() => {
-    // alert("board updated");
+    if (playerCount < 2) return;
+    let countA = 0;
+    let countB = 0;
+    for (let i = 0; i < 5; i++) {
+      for (let j = 0; j < 5; j++) {
+        if (board[i][j]) {
+          if (board[i][j].charAt(0) == "A") {
+            countA++;
+          }
+          if (board[i][j].charAt(0) == "B") {
+            countB++;
+          }
+        }
+      }
+    }
+    if (countA == 0) {
+      setTimeout(() => {
+        // window.location.reload();
+        alert("Game Ends! B Won");
+        setBoard([]);
+        window.location.reload();
+      }, 200);
+    }
+    if (countB == 0) {
+      setTimeout(() => {
+        // window.location.reload();
+        alert("Game Ends! A Won");
+        setBoard([]);
+        window.location.reload();
+      }, 200);
+    }
+    setALeft(countA);
+    setBLeft(countB);
+
+    // checkForWin()
     console.log(board);
   }, [board]);
-
+  // const checkForWin = ()=>{
+  //   if(aLeft==0) alert("B Won");
+  //   if(BLeft==0) alert("A Won");
+  // }
+  const [aLeft, setALeft] = useState(5);
+  const [bLeft, setBLeft] = useState(5);
   const connect = useCallback(() => {
     const ws = new WebSocket("ws://localhost:8080");
 
@@ -52,10 +91,15 @@ const Home = () => {
         setBoard(message.data.board);
         setChanceB(message.data.chanceB); //invalid, killing, winning etc ignore for now coz  just wanna get all set up and running first
       } else if (message.type == "playerLeft") {
-        alert("You won, the other player left");
+        setBoard(message.data.board);
+        setPlayerCount(0);
+        setPlayerId("");
+        // alert("You won, the other player left");
         // setTimeout(() => {
         //   location.reload();
         // }, 1000);
+      } else if (message.type == "error_alert") {
+        alert(message.data);
       }
       if (message.type === "game_state") {
         setGameState(message.data);
@@ -143,11 +187,11 @@ const Home = () => {
             key={j}
             className={`w-20 m-1 h-20 border ${
               !col
-                ? "bg-purple-50"
+                ? "bg-purple-50 rounded"
                 : col.charAt(0) == "A"
-                ? "bg-cyan-200"
-                : "bg-emerald-200"
-            } rounded-md border-gray-400 flex items-center justify-center`}
+                ? "bg-cyan-200 rounded-b-3xl"
+                : "bg-emerald-200 rounded-t-3xl"
+            }  border-gray-400 flex items-center justify-center transition-all duration-500`}
           >
             {col}
           </div>
@@ -158,7 +202,7 @@ const Home = () => {
   if (playerCount < 2) {
     return (
       <div className="bg-purple-50 h-screen flex flex-col justify-between overflow-x-hidden">
-        <div className="w-full flex justify-between bg-black text-white text-4xl font-normal p-10">
+        <div className="w-full flex justify-between bg-black text-white text-3xl font-normal p-8">
           <button
             onClick={() => {
               sendMessage({ type: "a_joined", data: {} });
@@ -184,18 +228,35 @@ const Home = () => {
             Join as Player <strong>B</strong>
           </button>
         </div>
-        <div className="w-full h-full bg-purple-50 text-purple-950 text-center py-16">
+        <div className="w-full h-full bg-purple-50 text-purple-950 text-center py-8">
           {playerCount == 0 ? (
             <h1 className="text-4xl">Press Join to Initialize a Game</h1>
           ) : (
             <h1 className="text-4xl">1 Player Joined, Waiting for 1 </h1>
           )}
-          {playerId && (
+          {/* {playerId && (
             <h1 className="text-center underline  text-lg m-10">
               Hey, you are Player: <strong>{playerId}</strong>
             </h1>
-          )}
+          )} */}
+          <iframe
+            // width="560"
+            // height="315"
+            className="w-1/3 h-fit aspect-video mx-auto mt-7"
+            src="https://www.youtube.com/embed/ZUOlj3Rn2jU?si=Vcv715IwUhBZdWQq"
+            title="YouTube video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen
+          ></iframe>
+          <h1>
+            {" "}
+            This video was put here for recording purposes only, I have not
+            created hitwicket, but would love to contribute in its development.
+          </h1>
         </div>
+
         <footer className="w-full bg-purple-950 text-white text-center py-2">
           A{" "}
           <Link
@@ -253,6 +314,15 @@ const Home = () => {
         <h1 className="text-center text-xl font-bold text-white hover:tracking-wider transition-all duration-200">
           Clash of Chess
         </h1>
+        <div className="flex gap-10">
+          <h1 className="text-cyan-500">
+            A&apos;s Remaining Pieces: <strong>{aLeft}</strong>
+          </h1>
+          <h1 className="text-emerald-500">
+            B&apos;s Remaining Pieces: <strong>{bLeft}</strong>
+          </h1>
+        </div>
+
         <h1 className="text-center  text-xl text-white">
           Hey, you are: <strong>{playerId}</strong>
         </h1>
@@ -282,7 +352,7 @@ const Home = () => {
                   <p className="text-center font-bold">{char}</p>
                   <div className="flex flex-wrap justify-center">
                     {char.startsWith("P")
-                      ? ["L", "R", "F", "B"].map((dir) => (
+                      ? ["L", "F", "B", "R"].map((dir) => (
                           <button
                             key={`${char}:${dir}`}
                             onClick={() =>
@@ -302,10 +372,18 @@ const Home = () => {
                           </button>
                         ))
                       : char === "H1"
-                      ? ["L", "R", "F", "B"].map((dir) => (
+                      ? ["L", "F", "B", "R"].map((dir) => (
                           <button
                             key={`${char}:${dir}`}
-                            onClick={() => handleMove(`${char}:${dir}`)}
+                            // onClick={() => handleMove(`${char}:${dir}`)}
+                            onClick={() =>
+                              // handleMove(`${char}:${dir}`)
+
+                              sendMessage({
+                                type: "piece_moved",
+                                data: { chanceB, char, dir },
+                              })
+                            }
                             className={`px-5 py-5 bg-purple-600 text-white rounded m-1 text-xl ${
                               currentTurn == playerId && "hover:opacity-70"
                             }`}
@@ -314,10 +392,18 @@ const Home = () => {
                             {dir}
                           </button>
                         ))
-                      : ["FL", "FR", "BL", "BR"].map((dir) => (
+                      : ["FL", "BL", "BR", "FR"].map((dir) => (
                           <button
                             key={`${char}:${dir}`}
-                            onClick={() => handleMove(`${char}:${dir}`)}
+                            // onClick={() => handleMove(`${char}:${dir}`)}
+                            onClick={() =>
+                              // handleMove(`${char}:${dir}`)
+
+                              sendMessage({
+                                type: "piece_moved",
+                                data: { chanceB, char, dir },
+                              })
+                            }
                             className={`px-5 py-5 bg-purple-700 text-white rounded m-1 text-xl ${
                               currentTurn == playerId && " hover:opacity-70"
                             }`}
