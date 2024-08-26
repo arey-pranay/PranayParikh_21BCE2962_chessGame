@@ -19,8 +19,9 @@
 
 ##### How can you run this ?
 
-- So, first just clone my repo using git clone ...
+- So, first just clone my repo using git clone https://github.com/arey-pranay/PranayParikh_21BCE2962_chessGame.git .
 - Then install the node_modules (npm i)
+- npm install -g nodemon (if not already having it)
 - Then first start the server from the root directory by nodemon server.js
 - And finally start the frontend by using "npm run dev"
 - You can also refer the video in case of any queries.

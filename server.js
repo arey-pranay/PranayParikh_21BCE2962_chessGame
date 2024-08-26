@@ -65,7 +65,6 @@ const registerMove = (ws, player, piece, direction) => {
     else if (direction == "FR") direction = "BL";
     else if (direction == "BL") direction = "FR";
     else if (direction == "BR") direction = "FL";
-    // for BL BR Fl Fr also then
   }
   let toFind = player + "-" + piece;
   console.log("toFind: " + toFind);
@@ -84,8 +83,6 @@ const registerMove = (ws, player, piece, direction) => {
 
   let OldI = I;
   let OldJ = J;
-  //not yet considering killing other pieces
-  //considering only One direction of moving. Later u=I need to update for A and B separately, coz one's up is another's down
   if (piece == "P1" || piece == "P2" || piece == "P3") {
     switch (direction) {
       case "R":
@@ -155,12 +152,12 @@ const registerMove = (ws, player, piece, direction) => {
   if (piece == "H1") {
     console.log(pathKill);
     if (pathKill[0] == -1 && pathKill[1] == -1) {
-      console.log("invalid move"); //of this move
+      console.log("invalid move");
       ws.send(JSON.stringify({ type: "error_alert", data: "invalid move" }));
       return;
     }
     if (!checkValidity(player, piece, I, J)) {
-      console.log("invalid move"); //of this move
+      console.log("invalid move");
       ws.send(JSON.stringify({ type: "error_alert", data: "invalid move" }));
       return;
     }
@@ -188,31 +185,27 @@ const registerMove = (ws, player, piece, direction) => {
   }
 };
 const checkValidity = (player, piece, I, J) => {
+  //maybe out of bound
+  //maybe unable to kill due to hierarchy etc
   console.log("checking validity");
   console.log(I);
   console.log(J);
   console.log(player);
-  // console.log(board[I][J].charAt(0));
   if (I < 0 || J < 0 || I > 4 || J > 4) return false;
   if (board[I][J] && player == board[I][J].charAt(0)) return false;
   return true;
-  //maybe out of bound
-  //maybe unable to kill due to hierarchy etc
 };
 const checkValidityH1 = (player, piece, I, J) => {
   console.log("checking validity for H1");
   console.log(I);
   console.log(J);
   console.log(player);
-  // console.log(board[I][J].charAt(0));
   if (I < 0 || J < 0 || I > 4 || J > 4) return [-1, -1];
   if (board[I][J] && player == board[I][J].charAt(0)) return [-1, -1];
   return [I, J];
 };
 
 server.on("connection", (ws) => {
-  let playerId;
-  let gameId;
   clients.push(ws);
   ws.on("message", (message) => {
     try {
@@ -223,19 +216,16 @@ server.on("connection", (ws) => {
         case "a_joined":
           console.log("a joined");
           initializeA();
-          // const updateMessage = ;
           broadcast(
             JSON.stringify({
               type: "update_board",
               data: { board, playersJoined },
             })
           );
-          // ws.send(JSON.stringify({ type: "update_board", data: board }));
           break;
         case "b_joined":
           console.log("b joined");
           initializeB();
-          // const updateMessage = JSON.stringify({ type: "update_board", data: board });
           broadcast(
             JSON.stringify({
               type: "update_board",
@@ -245,11 +235,8 @@ server.on("connection", (ws) => {
               },
             })
           );
-          // ws.send(JSON.stringify({ type: "update_board", data: board }));
           break;
-
         case "piece_moved":
-          // chanceB = !chanceB;
           console.log("piece_moved event received");
           console.log(data);
           let player = data.chanceB != 0 ? "B" : "A";

@@ -7,7 +7,6 @@ const Home = () => {
   const [gameState, setGameState] = useState(null);
   const [playerId, setPlayerId] = useState("");
   const [gameId, setGameId] = useState("");
-  const [isJoined, setIsJoined] = useState(false);
 
   const [board, setBoard] = useState(
     Array(5)
@@ -35,16 +34,13 @@ const Home = () => {
     }
     if (countA == 0) {
       setTimeout(() => {
-        // window.location.reload();
         alert("Game Ends! B Won");
         setBoard([]);
-
         window.location.reload();
       }, 200);
     }
     if (countB == 0) {
       setTimeout(() => {
-        // window.location.reload();
         alert("Game Ends! A Won");
         setBoard([]);
         window.location.reload();
@@ -52,14 +48,8 @@ const Home = () => {
     }
     setALeft(countA);
     setBLeft(countB);
-
-    // checkForWin()
     console.log(board);
   }, [board]);
-  // const checkForWin = ()=>{
-  //   if(aLeft==0) alert("B Won");
-  //   if(BLeft==0) alert("A Won");
-  // }
   const [aLeft, setALeft] = useState(5);
   const [bLeft, setBLeft] = useState(5);
   const connect = useCallback(() => {
@@ -89,15 +79,15 @@ const Home = () => {
         console.log(message.data);
         setPlayerCount(message.data.playersJoined);
       } else if (message.type == "move_registered") {
-        // alert("move registered");
         setBoard(message.data.board);
-        setChanceB(message.data.chanceB); //invalid, killing, winning etc ignore for now coz  just wanna get all set up and running first
+        setChanceB(message.data.chanceB);
         setMoveHistory(message.data.moveHistory);
       } else if (message.type == "playerLeft") {
         setBoard(message.data.board);
         setMoveHistory(message.data.moveHistory);
         setPlayerCount(0);
         setPlayerId("");
+        window.location.reload();
       } else if (message.type == "error_alert") {
         alert(message.data);
       }
@@ -139,38 +129,7 @@ const Home = () => {
 
   const gameOver = gameState ? gameState.gameOver : false;
   const winner = gameState ? gameState.winner : "";
-  const waitingForGameStart = !gameState || gameState.players.length < 2;
 
-  const joinGame = (gameId, playerId) => {
-    if (isConnected) {
-      console.log(`Joining game ${gameId} as ${playerId}`);
-      sendMessage({ type: "join_game", data: { gameId, playerId } });
-      setPlayerId(playerId);
-      setGameId(gameId);
-      setIsJoined(true);
-    }
-  };
-
-  const setupCharacters = () => {
-    if (isConnected) {
-      const setupData = {
-        playerId,
-        gameId,
-      };
-      console.log("Sending setup data:", setupData);
-      sendMessage({ type: "setup_characters", data: setupData });
-    }
-  };
-
-  const handleMove = (move) => {
-    alert("button clicked");
-    if (isConnected && isJoined && !gameOver && currentTurn === playerId) {
-      console.log(`Sending move: ${move}`);
-      sendMessage({ type: "make_move", data: { gameId, move } });
-    } else if (currentTurn !== playerId) {
-      alert("It's not your turn!");
-    }
-  };
   const renderBoard = () => {
     return board.map((row, i) => (
       <div key={i} className="flex w-full justify-center ">
@@ -226,7 +185,11 @@ const Home = () => {
           ) : (
             <h1 className="text-4xl">1 Player Joined, Waiting for 1 </h1>
           )}
-
+          <h1 className="my-4 tracking-widest underline text-black font-bold">
+            {" "}
+            Kindly Open Both Browser Tabs before clicking any join button, to
+            ensure a seamless interaction
+          </h1>
           <iframe
             className="w-1/3 h-fit aspect-video mx-auto mt-7 border-purple-900 border-4 p-1 hover:p-2 transition-all duration-200"
             src="https://www.youtube.com/embed/fVsUBqi8cnc?si=jB4OcZt617gx-TOj"
@@ -277,7 +240,6 @@ const Home = () => {
         <h1 className="text-center  text-xl text-white">
           Hey, you are: <strong>{playerId}</strong>
         </h1>
-        {/* <h1 className="text-purple-50">By Pranay</h1> */}
       </header>
       <div className=" gap-10 sm:hidden flex justify-center bg-purple-950 my-4 p-2">
         <h1 className="text-cyan-500">
@@ -293,107 +255,87 @@ const Home = () => {
             {renderBoard()}
           </div>
         </>
-        {gameOver ? (
-          <div className="text-center text-xl font-bold mt-4">
-            {winner ? `Player ${winner} wins!` : "Game Over"}
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-500 text-white rounded mt-2"
-            >
-              Start New Game
-            </button>
+        <>
+          <div className="flex flex-wrap  mt-4 sm:w-2/3  justify-center ">
+            {["P1", "P2", "P3", "H1", "H2"].map((char) => (
+              <div key={char} className="m-2">
+                <p className="text-center font-bold">{char}</p>
+                <div className="flex flex-wrap justify-center">
+                  {char.startsWith("P")
+                    ? ["L", "F", "B", "R"].map((dir) => (
+                        <button
+                          key={`${char}:${dir}`}
+                          onClick={() =>
+                            sendMessage({
+                              type: "piece_moved",
+                              data: { chanceB, char, dir },
+                            })
+                          }
+                          className={`px-5 py-5 bg-purple-500 text-white rounded m-1 text-xl ${
+                            currentTurn == playerId && "hover:opacity-70"
+                          }`}
+                          disabled={currentTurn !== playerId}
+                        >
+                          {dir}
+                        </button>
+                      ))
+                    : char === "H1"
+                    ? ["L", "F", "B", "R"].map((dir) => (
+                        <button
+                          key={`${char}:${dir}`}
+                          onClick={() =>
+                            sendMessage({
+                              type: "piece_moved",
+                              data: { chanceB, char, dir },
+                            })
+                          }
+                          className={`px-5 py-5 bg-purple-600 text-white rounded m-1 text-xl ${
+                            currentTurn == playerId && "hover:opacity-70"
+                          }`}
+                          disabled={currentTurn !== playerId}
+                        >
+                          {dir}
+                        </button>
+                      ))
+                    : ["FL", "BL", "BR", "FR"].map((dir) => (
+                        <button
+                          key={`${char}:${dir}`}
+                          onClick={() =>
+                            sendMessage({
+                              type: "piece_moved",
+                              data: { chanceB, char, dir },
+                            })
+                          }
+                          className={`px-5 py-5 bg-purple-700 text-white rounded m-1 text-xl ${
+                            currentTurn == playerId && " hover:opacity-70"
+                          }`}
+                          disabled={currentTurn !== playerId}
+                        >
+                          {dir}
+                        </button>
+                      ))}
+                </div>
+              </div>
+            ))}
           </div>
-        ) : (
-          <>
-            <div className="flex flex-wrap  mt-4 sm:w-2/3  justify-center ">
-              {["P1", "P2", "P3", "H1", "H2"].map((char) => (
-                <div key={char} className="m-2">
-                  <p className="text-center font-bold">{char}</p>
-                  <div className="flex flex-wrap justify-center">
-                    {char.startsWith("P")
-                      ? ["L", "F", "B", "R"].map((dir) => (
-                          <button
-                            key={`${char}:${dir}`}
-                            onClick={() =>
-                              // handleMove(`${char}:${dir}`)
-
-                              sendMessage({
-                                type: "piece_moved",
-                                data: { chanceB, char, dir },
-                              })
-                            }
-                            className={`px-5 py-5 bg-purple-500 text-white rounded m-1 text-xl ${
-                              currentTurn == playerId && "hover:opacity-70"
-                            }`}
-                            disabled={currentTurn !== playerId}
-                          >
-                            {dir}
-                          </button>
-                        ))
-                      : char === "H1"
-                      ? ["L", "F", "B", "R"].map((dir) => (
-                          <button
-                            key={`${char}:${dir}`}
-                            // onClick={() => handleMove(`${char}:${dir}`)}
-                            onClick={() =>
-                              // handleMove(`${char}:${dir}`)
-
-                              sendMessage({
-                                type: "piece_moved",
-                                data: { chanceB, char, dir },
-                              })
-                            }
-                            className={`px-5 py-5 bg-purple-600 text-white rounded m-1 text-xl ${
-                              currentTurn == playerId && "hover:opacity-70"
-                            }`}
-                            disabled={currentTurn !== playerId}
-                          >
-                            {dir}
-                          </button>
-                        ))
-                      : ["FL", "BL", "BR", "FR"].map((dir) => (
-                          <button
-                            key={`${char}:${dir}`}
-                            // onClick={() => handleMove(`${char}:${dir}`)}
-                            onClick={() =>
-                              // handleMove(`${char}:${dir}`)
-
-                              sendMessage({
-                                type: "piece_moved",
-                                data: { chanceB, char, dir },
-                              })
-                            }
-                            className={`px-5 py-5 bg-purple-700 text-white rounded m-1 text-xl ${
-                              currentTurn == playerId && " hover:opacity-70"
-                            }`}
-                            disabled={currentTurn !== playerId}
-                          >
-                            {dir}
-                          </button>
-                        ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className=" sm:text-xl flex justify-center w-full h-fit sm:h-full flex-col sm:w-fit text-center gap-4">
-              {currentTurn == playerId ? (
-                <div className="rounded-full mx-auto sm:mx-0 bg-purple-950 p-7 my-8 sm:my-0 text-white hover:rotate-12 transition-all duration-200 hover:scale-90">
+          <div className=" sm:text-xl flex justify-center w-full h-fit sm:h-full flex-col sm:w-fit text-center gap-4">
+            {currentTurn == playerId ? (
+              <div className="rounded-full mx-auto sm:mx-0 bg-purple-950 p-7 my-8 sm:my-0 text-white hover:rotate-12 transition-all duration-200 hover:scale-90">
+                {" "}
+                <h1 className="font-bold underline">Your Turn</h1>
+              </div>
+            ) : (
+              <div className="rounded-full mx-auto sm:mx-0 bg-yellow-400 p-7 my-8 sm:my-0 text-white hover:rotate-12 transition-all duration-200 hover:scale-90">
+                {" "}
+                <h1 className="font-semibold text-lg whitespace-nowrap">
                   {" "}
-                  <h1 className="font-bold underline">Your Turn</h1>
-                </div>
-              ) : (
-                <div className="rounded-full mx-auto sm:mx-0 bg-yellow-400 p-7 my-8 sm:my-0 text-white hover:rotate-12 transition-all duration-200 hover:scale-90">
-                  {" "}
-                  <h1 className="font-semibold text-lg whitespace-nowrap">
-                    {" "}
-                    {chanceB == 1 ? "B" : "A"}&apos;s Turn <br />
-                  </h1>
-                  <h1 className="text-sm whitespace-nowrap"> Please Wait </h1>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+                  {chanceB == 1 ? "B" : "A"}&apos;s Turn <br />
+                </h1>
+                <h1 className="text-sm whitespace-nowrap"> Please Wait </h1>
+              </div>
+            )}
+          </div>
+        </>
       </div>
       <div className="bg-gray-100 border-2 ">
         <h1 className="text-center text-xl my-4 font-semibold">
