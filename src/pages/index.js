@@ -14,6 +14,7 @@ const Home = () => {
       .fill(null)
       .map(() => Array(5).fill(null))
   );
+  const [moveHistory, setMoveHistory] = useState({ A: [], B: [] });
   const [playerCount, setPlayerCount] = useState(0);
   const [chanceB, setChanceB] = useState(0);
   useEffect(() => {
@@ -90,6 +91,7 @@ const Home = () => {
         // alert("move registered");
         setBoard(message.data.board);
         setChanceB(message.data.chanceB); //invalid, killing, winning etc ignore for now coz  just wanna get all set up and running first
+        setMoveHistory(message.data.moveHistory);
       } else if (message.type == "playerLeft") {
         setBoard(message.data.board);
         setPlayerCount(0);
@@ -178,6 +180,11 @@ const Home = () => {
       alert("It's not your turn!");
     }
   };
+
+  // let moveHistory = {
+  //   a: ["hey", "hello"],
+  //   b: ["hello", "hey"],
+  // };
 
   const renderBoard = () => {
     return board.map((row, i) => (
@@ -314,7 +321,7 @@ const Home = () => {
         <h1 className="text-center text-xl font-bold text-white hover:tracking-wider transition-all duration-200">
           Clash of Chess
         </h1>
-        <div className="flex gap-10">
+        <div className=" gap-10 hidden sm:flex">
           <h1 className="text-cyan-500">
             A&apos;s Remaining Pieces: <strong>{aLeft}</strong>
           </h1>
@@ -328,6 +335,14 @@ const Home = () => {
         </h1>
         {/* <h1 className="text-purple-50">By Pranay</h1> */}
       </header>
+      <div className=" gap-10 sm:hidden flex justify-center bg-purple-950 my-4 p-2">
+        <h1 className="text-cyan-500">
+          A&apos;s Remaining Pieces: <strong>{aLeft}</strong>
+        </h1>
+        <h1 className="text-emerald-500">
+          B&apos;s Remaining Pieces: <strong>{bLeft}</strong>
+        </h1>
+      </div>
       <div className="w-full gap-4 sm:flex justify-between p-2">
         <>
           <div className="my-4 p-2 rounded  sm:w-1/3 mx-auto bg-purple-950 ">
@@ -435,6 +450,45 @@ const Home = () => {
             </div>
           </>
         )}
+      </div>
+      <div className="bg-gray-100 border-2 ">
+        <h1 className="text-center text-xl my-4 font-semibold">
+          Move History (Old to New)
+        </h1>
+        <div className="w-full bg-purple-900 flex gap-4 p-4 font-medium">
+          <div className="w-1/2 bg-cyan-100 text-purple-900 flex flex-col items-start h-64 overflow-y-scroll">
+            <h1 className="text-lg  mx-auto text-black underline font-bold">
+              {" "}
+              A&apos;s History
+            </h1>
+
+            <ul className="space-y-2 pl-4 ">
+              {moveHistory.A.map((move) => (
+                <li>{move}</li>
+              ))}
+              {/* <li>Move Name</li>
+              <li>Move Name</li>
+              <li>Move Name</li>
+              <li>Move Name</li>
+              <li>Move Name</li>
+              <li>Move Name</li>
+              <li>Move Name</li>
+              <li>Move Name</li>
+              <li>Move Name</li> */}
+            </ul>
+          </div>
+
+          <div className="w-1/2 bg-emerald-100 text-purple-900 flex flex-col items-start h-64 overflow-y-scroll">
+            <h1 className="text-lg  mx-auto text-black underline font-bold">
+              B&apos;s History
+            </h1>
+            <ul className="space-y-2 pl-4 ">
+              {moveHistory.B.map((move) => (
+                <li>{move}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
       <footer className="w-full bg-purple-950 text-white text-center py-2">
         A{" "}

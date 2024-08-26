@@ -26,6 +26,10 @@ const resetBoard = () => {
     .fill(null)
     .map(() => Array(5).fill(null));
 };
+let moveHistory = {
+  A: [],
+  B: [],
+};
 const initializeA = () => {
   // for (let i = 0; i < 5; i++) {
   board[0][0] = "A-P1";
@@ -63,7 +67,7 @@ const registerMove = (ws, player, piece, direction) => {
   console.log("line58: " + player);
   console.log("line58: " + piece);
   console.log("line58: " + direction);
-
+  const originalDirection = direction;
   if (player == "B") {
     if (direction == "L") direction = "R";
     else if (direction == "R") direction = "L";
@@ -162,6 +166,7 @@ const registerMove = (ws, player, piece, direction) => {
   console.log("Updated Board");
   console.log(board);
   chanceB = !chanceB;
+  moveHistory[player].push((piece + " : " + originalDirection).toString());
   return;
 };
 const checkValidity = (player, piece, I, J) => {
@@ -362,6 +367,7 @@ server.on("connection", (ws) => {
               data: {
                 board,
                 chanceB,
+                moveHistory,
               },
             })
           );
