@@ -152,7 +152,7 @@ const checkValidity = (player, piece, direction, I, J) => {
   console.log(I);
   console.log(J);
   if (I < 0 || J < 0 || I > 4 || J > 4) return false;
-  // if (player == board[I][J][0]) return false;
+  if (board[I][J] && player == board[I][J].charAt(0)) return false;
   return true;
   //maybe out of bound
   //maybe unable to kill due to hierarchy etc
