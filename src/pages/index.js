@@ -22,6 +22,7 @@ const Home = () => {
     let countB = 0;
     for (let i = 0; i < 5; i++) {
       for (let j = 0; j < 5; j++) {
+        if (!board || board == []) break;
         if (board[i][j]) {
           if (board[i][j].charAt(0) == "A") {
             countA++;
@@ -194,10 +195,9 @@ const Home = () => {
             className="w-1/3 h-fit aspect-video mx-auto mt-7 border-purple-900 border-4 p-1 hover:p-2 transition-all duration-200"
             src="https://www.youtube.com/embed/fVsUBqi8cnc?si=jB4OcZt617gx-TOj"
             title="YouTube video player"
-            frameborder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerpolicy="strict-origin-when-cross-origin"
-            allowfullscreen="true"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen={true}
           ></iframe>
           <h1 className="mt-4">
             {" "}

@@ -52,9 +52,6 @@ function broadcast(message) {
   });
 }
 const registerMove = (ws, player, piece, direction) => {
-  console.log("line58: " + player);
-  console.log("line58: " + piece);
-  console.log("line58: " + direction);
   const originalDirection = direction;
   if (player == "B") {
     if (direction == "L") direction = "R";
@@ -281,7 +278,7 @@ server.on("connection", (ws) => {
         data: { board: board, moveHistory: moveHistory },
       })
     );
-    console.log("WebSocket connection closed");
+    // console.log("WebSocket connection closed");
   });
 });
 
