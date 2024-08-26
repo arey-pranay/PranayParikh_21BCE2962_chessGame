@@ -38,6 +38,7 @@ const Home = () => {
         // window.location.reload();
         alert("Game Ends! B Won");
         setBoard([]);
+
         window.location.reload();
       }, 200);
     }
@@ -94,12 +95,9 @@ const Home = () => {
         setMoveHistory(message.data.moveHistory);
       } else if (message.type == "playerLeft") {
         setBoard(message.data.board);
+        setMoveHistory(message.data.moveHistory);
         setPlayerCount(0);
         setPlayerId("");
-        // alert("You won, the other player left");
-        // setTimeout(() => {
-        //   location.reload();
-        // }, 1000);
       } else if (message.type == "error_alert") {
         alert(message.data);
       }
@@ -134,13 +132,6 @@ const Home = () => {
     },
     [socket, isConnected]
   );
-
-  // const board = gameState
-  //   ? gameState.board
-  //   : Array(5)
-  //       .fill(null)
-  //       .map(() => Array(5).fill(null));
-  // const currentTurn = gameState ? gameState.players[gameState.currentTurn] : "";
   const [currentTurn, setCurrentTurn] = useState("A");
   useEffect(() => {
     setCurrentTurn(chanceB == 1 ? "B" : "A");
@@ -180,12 +171,6 @@ const Home = () => {
       alert("It's not your turn!");
     }
   };
-
-  // let moveHistory = {
-  //   a: ["hey", "hello"],
-  //   b: ["hello", "hey"],
-  // };
-
   const renderBoard = () => {
     return board.map((row, i) => (
       <div key={i} className="flex w-full justify-center ">
@@ -241,26 +226,20 @@ const Home = () => {
           ) : (
             <h1 className="text-4xl">1 Player Joined, Waiting for 1 </h1>
           )}
-          {/* {playerId && (
-            <h1 className="text-center underline  text-lg m-10">
-              Hey, you are Player: <strong>{playerId}</strong>
-            </h1>
-          )} */}
+
           <iframe
-            // width="560"
-            // height="315"
-            className="w-1/3 h-fit aspect-video mx-auto mt-7"
-            src="https://www.youtube.com/embed/ZUOlj3Rn2jU?si=Vcv715IwUhBZdWQq"
+            className="w-1/3 h-fit aspect-video mx-auto mt-7 border-purple-900 border-4 p-1 hover:p-2 transition-all duration-200"
+            src="https://www.youtube.com/embed/fVsUBqi8cnc?si=jB4OcZt617gx-TOj"
             title="YouTube video player"
             frameborder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             referrerpolicy="strict-origin-when-cross-origin"
-            allowfullscreen
+            allowfullscreen="true"
           ></iframe>
-          <h1>
+          <h1 className="mt-4">
             {" "}
-            This video was put here for recording purposes only, I have not
-            created hitwicket, but would love to contribute in its development.
+            This is the demo of &quot;Clash Of Chess&quot;, please view this to
+            know more about the project.
           </h1>
         </div>
 
@@ -276,44 +255,9 @@ const Home = () => {
           </Link>{" "}
           Product
         </footer>
-        {/* <h1>{playerCount} joined</h1> */}
       </div>
     );
   }
-
-  // return <div>both joined</div>;
-
-  // if (waitingForGameStart) {
-  //   return (
-  //     <div className="p-4">
-  //       <h1 className="text-center text-2xl font-bold mb-4">Join Game</h1>
-  //       <div className="flex justify-center space-x-4 mb-4">
-  //         <button
-  //           onClick={() => joinGame("1", "A")}
-  //           className="px-4 py-2 bg-blue-500 text-white rounded"
-  //         >
-  //           Join as Player A
-  //         </button>
-  //         <button
-  //           onClick={() => joinGame("1", "B")}
-  //           className="px-4 py-2 bg-blue-500 text-white rounded"
-  //         >
-  //           Join as Player B
-  //         </button>
-  //       </div>
-  //       {isJoined && (
-  //         <div className="text-center">
-  //           <button
-  //             onClick={setupCharacters}
-  //             className="px-4 py-2 bg-green-500 text-white rounded"
-  //           >
-  //             Start Game
-  //           </button>
-  //         </div>
-  //       )}
-  //     </div>
-  //   );
-  // }
 
   return (
     <div className=" bg-purple-50 h-screen flex flex-col justify-between overflow-x-hidden">
@@ -466,15 +410,6 @@ const Home = () => {
               {moveHistory.A.map((move) => (
                 <li>{move}</li>
               ))}
-              {/* <li>Move Name</li>
-              <li>Move Name</li>
-              <li>Move Name</li>
-              <li>Move Name</li>
-              <li>Move Name</li>
-              <li>Move Name</li>
-              <li>Move Name</li>
-              <li>Move Name</li>
-              <li>Move Name</li> */}
             </ul>
           </div>
 
